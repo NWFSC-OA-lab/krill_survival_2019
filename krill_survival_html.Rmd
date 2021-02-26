@@ -21,11 +21,13 @@ library(tidyverse)
 
 
 ```{r Read in data and begin manipulating, echo=FALSE, results=FALSE, message=FALSE, warning=FALSE}
-
 #set directory, read in file
-setwd("C:/Users/Danielle.Perez/Documents/Krill 2019/krillSurvival/data")
-d <- read_excel("Krill Data.xlsx")
-#d <- readxl::read_xlsx(here)
+#setwd("C:/Users/Danielle.Perez/Documents/Krill 2019/krillSurvival/data")
+#d <- read_excel("Krill Data.xlsx")
+d <- readxl::read_xlsx(here("data", "Krill Data.xlsx"))
+
+#Create file with metadata template added
+write_meta_template(d, here("output", "krill_survival_2019"))
 
 #Manipulate calendar date, adds "day" column
 d$DateOfPresPOSIX <- as.POSIXlt.character("2019-9-12")
@@ -340,7 +342,7 @@ gpTotalAcclT$plot <- gpTotalAcclT$plot + scale_linetype_manual(values = lines) +
   scale_colour_manual(values=cbp1) 
   
 gpTotalAcclT
-
+ggsave(here("figs", "survival_probability.jpeg"))
 
 ```
 
