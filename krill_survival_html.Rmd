@@ -3,6 +3,8 @@ title: "R Notebook"
 output:
   html_document:
     df_print: paged
+editor_options: 
+  chunk_output_type: console
 ---
 
 
@@ -17,6 +19,8 @@ library(viridis)
 library(readxl)
 library(survminer)
 library(tidyverse)
+library(frailtyEM)
+library(todor)
 ```
 
 
@@ -368,5 +372,81 @@ summary(coxTreatCurrent)
 #coxme again
 coxMixedCurrent <- coxme(survTotalAccl ~ treatment + (1|Moats), data = dfAcclGoodMoats)
 summary(coxMixedCurrent)
+```
+
+frailtyEM
+```{r}
+
+#moats 3 is a bit of an outlier. if it is removed, the fraility disappears
+d <- dfAcclGoodMoats %>%
+#  filter(Moats != 3) %>%
+  {.}
+
+#make surv object
+surv = Surv(time = d$Day, d$totalDeathEvent, type = "right")
+
+# fit model and plot without random effect
+# This is just for visual comparison of the plots
+sf <- survfit(surv ~ treatment, data = d)
+ggsurvplot(sf)
+summary(coxph(surv ~ treatment, data = d))
+
+
+
+#find the frailty distribution with the maximium likelihood
+frailtyDist <- data.frame(name = c("gamma", "stablePos", "invGausian", "nonCenGamma"),
+  dist = c("gamma", "stable", "pvf", "pvf"), m = c(0, 0, -0.5, 1))
+dLike <- NULL
+for(i in 1:length(frailtyDist$name)){
+  mLogLike <- emfrail(surv ~ treatment + cluster(Moats), 
+                  distribution = emfrail_dist(dist = frailtyDist$dist[i], pvfm = frailtyDist$m[i]),
+                  data = d)$loglik[2]
+  dTemp <- data.frame(dist = frailtyDist$name[i], logLike = mLogLike)
+  dLike <- rbind(dLike, dTemp)
+}
+
+bestDist <- dLike$dist[dLike$logLike == max(dLike$logLike)]
+  
+
+# fit model with moats random effect using best fit frailty distribution
+fme <- emfrail(surv ~ treatment + cluster(Moats), 
+                  distribution = emfrail_dist(dist = frailtyDist$dist[frailtyDist$name == bestDist],
+                                           pvfm = frailtyDist$m[frailtyDist$name == bestDist] ),
+                  data = d)
+summary(fme)
+
+#reorder levels for treatment contrast
+treatLevels <- levels(dfAcclGoodMoats$treatment)
+d$treatment <- relevel(d$treatment, ref = treatLevels[2])
+fme2 <- emfrail(surv ~ treatment + cluster(Moats), 
+                  distribution = emfrail_dist(dist = "stable"),
+                  data = d)
+
+summary(fme2)
+
+#TODO summarize frailtyEM methods and results in manuscript format
+
+ ####
+#frailty plot - shows variation in frailty terms
+autoplot(fme, type = "frail")
+#new data of treatmenst for survival plots
+dNew <- data.frame(treatment = unique(dfAcclGoodMoats$treatment))
+#predictions (surival probabilites) of treatmeents 
+pred <- predict(fme, newdata = dNew, conf_int = "adjusted")
+
+#create a data frame of the prections for ploting all the treatment curves
+dPlot <- NULL
+for(i in 1:length(pred)){
+  dTemp <- pred[[i]] %>%
+    mutate(treatment = levels(d$treatment)[i])
+  dPlot <- rbind(dPlot, dTemp)
+}
+#plot marginal survival curves
+# TODO fit the frailtyEM model fo the other survival estimate and plot curves
+# TODO Make the plot pretty
+ggplot(dPlot, aes(time, survival_m)) +
+  geom_step(aes( color = treatment)) +
+  ylim(0,1) +
+  geom_blank()
 ```
 
