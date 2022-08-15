@@ -380,7 +380,6 @@ summary(coxMixedCurrent)
 frailtyEM
 ```{r}
 
-
 #moats 3 is a bit of an outlier. if it is removed, the frailty disappears
 d <- dfAcclGoodMoats %>%
 #  filter(Moats != 3) %>%
@@ -397,25 +396,40 @@ surv = Surv(time = d$Day, d$totalDeathEvent, type = "right")
 sf <- survfit(surv ~ treatment, data = d)
 ggsurvplot(sf)
 summary(coxph(surv ~ treatment, data = d))
+```
 
-
-
+find_frailty_best_distribution
+```{r}
 #find the frailty distribution with the maximum likelihood
 # Note: the for loop can be kinda slow because it is fitting all four models
-frailtyDist <- data.frame(name = c("gamma", "stablePos", "invGausian", "nonCenGamma"),
-  dist = c("gamma", "stable", "pvf", "pvf"), m = c(0, 0, -0.5, 1))
-dLike <- NULL
-for(i in 1:length(frailtyDist$name)){
-  mLogLike <- emfrail(surv ~ treatment + cluster(Moats), 
-                  distribution = emfrail_dist(dist = frailtyDist$dist[i], pvfm = frailtyDist$m[i]),
-                  data = d)$loglik[2]
-  dTemp <- data.frame(dist = frailtyDist$name[i], logLike = mLogLike)
-  dLike <- rbind(dLike, dTemp)
-}
-#identify the model frailty distribution with the maximum likelihood
-bestDist <- dLike$dist[dLike$logLike == max(dLike$logLike)]
-  
+#only need to run it once to find the best model
 
+# frailtyDist <- data.frame(name = c("gamma", "stablePos", "invGausian", "nonCenGamma"),
+#   dist = c("gamma", "stable", "pvf", "pvf"), m = c(0, 0, -0.5, 1))
+# dLike <- NULL
+# for(i in 1:length(frailtyDist$name)){
+#   mLogLike <- emfrail(surv ~ treatment + cluster(Moats), 
+#                   distribution = emfrail_dist(dist = frailtyDist$dist[i], pvfm = frailtyDist$m[i]),
+#                   data = d)$loglik[2]
+#   dTemp <- data.frame(dist = frailtyDist$name[i], logLike = mLogLike)
+#   dLike <- rbind(dLike, dTemp)
+# }
+# #identify the model frailty distribution with the maximum likelihood
+# bestDist <- dLike$dist[dLike$logLike == max(dLike$logLike)]
+#   
+
+```
+
+Set best frailty distribution
+```{r}
+# this is the distribution found by running the "find_frailty_best_distribution" code above
+# set this value here so you don't have to run find_frailty_best_distribution again - it is very slow
+bestDist <- "stablePos"
+```
+
+
+EM plot
+```{r}
 # fit model with moats random effect using best fit frailty distribution
 #reorder levels for treatment contrast
 d$treatment <- relevel(d$treatment, ref = origTreatLevels[1])
@@ -428,7 +442,8 @@ summary(fme)
 #reorder levels for treatment contrast
 d$treatment <- relevel(d$treatment, ref = origTreatLevels[2])
 fme2 <- emfrail(surv ~ treatment + cluster(Moats), 
-                  distribution = emfrail_dist(dist = "stable"),
+                  distribution = emfrail_dist(dist = frailtyDist$dist[frailtyDist$name == bestDist],
+                                           pvfm = frailtyDist$m[frailtyDist$name == bestDist] ),
                   data = d)
 
 summary(fme2)
@@ -452,6 +467,8 @@ for(i in 1:length(pred)){
 # TODO fit the frailtyEM model of the other survival estimate (estimated dead) and plot curves
 # TODO Make the plot pretty
 # TODO could and confidence bands or ribbons with dPlot$survival_m_l_a and dPlot$survival_m_r_a, but that would probably the graph too messy
+
+# PLOT A
 ggplot(dPlot, aes(time, survival_m)) +
   geom_step(aes( color = treatment)) +
   ylim(0,1) +
@@ -459,6 +476,8 @@ ggplot(dPlot, aes(time, survival_m)) +
 
 # TODO cleanup the frailtyEM text so it is manuscript ready
 ```
+
+
 Survival in the three treatments was compared using a hazard model that included the MOATS as a clustered frailty term. The frailty model was fit using the frailtyEM R package [ref]. Preliminary analyses was conducted to compare four potential distribution of the frailty (gamma, positive stable, inverse Gausian and non-central gamma). The positive stable distribution had the greatest likelihood value and it was selected for the final analysis (Balan and Putter). Using a likelihood ratio test, inclusion of the frailty term was deemed significant when compared to the treatment only hazards model (p = 0.000282). Likewise, the presence of unexplained heterogeneity in the simple non-frailty model suggests appropriate inclusion of the frailty (MOATS) term (Commenges-Andersen test p = 0.00417). There were no significant differences among pair-wise comparisons of the treatments (all vs. current p = 0.26; all vs. highT p = 0.38; current vs. highT p = 0.87). The graph plots the marginal survival curves comparing treatments integrated over the MOATS frailty effect.
 
 
@@ -486,18 +505,21 @@ summary(coxph(survAssu ~ treatment, data = d))
 
 #find the frailty distribution with the maximum likelihood
 # Note: the for loop can be kinda slow because it is fitting all four models
-frailtyDist <- data.frame(name = c("gamma", "stablePos", "invGausian", "nonCenGamma"),
-  dist = c("gamma", "stable", "pvf", "pvf"), m = c(0, 0, -0.5, 1))
-dLike <- NULL
-for(i in 1:length(frailtyDist$name)){
-  mLogLike <- emfrail(survAssu ~ treatment + cluster(Moats), 
-                  distribution = emfrail_dist(dist = frailtyDist$dist[i], pvfm = frailtyDist$m[i]),
-                  data = d)$loglik[2]
-  dTemp <- data.frame(dist = frailtyDist$name[i], logLike = mLogLike)
-  dLike <- rbind(dLike, dTemp)
-}
-#identify the model frailty distribution with the maxium likelihood
-bestDist <- dLike$dist[dLike$logLike == max(dLike$logLike)]
+# frailtyDist <- data.frame(name = c("gamma", "stablePos", "invGausian", "nonCenGamma"),
+#   dist = c("gamma", "stable", "pvf", "pvf"), m = c(0, 0, -0.5, 1))
+# dLike <- NULL
+# for(i in 1:length(frailtyDist$name)){
+#   mLogLike <- emfrail(survAssu ~ treatment + cluster(Moats), 
+#                   distribution = emfrail_dist(dist = frailtyDist$dist[i], pvfm = frailtyDist$m[i]),
+#                   data = d)$loglik[2]
+#   dTemp <- data.frame(dist = frailtyDist$name[i], logLike = mLogLike)
+#   dLike <- rbind(dLike, dTemp)
+# }
+# #identify the model frailty distribution with the maxium likelihood
+# bestDist <- dLike$dist[dLike$logLike == max(dLike$logLike)]
+
+#Only need to find the best distribution once
+bestDist <- "nonCenGamma"
   
 
 # fit model with moats random effect using best fit frailty distribution
@@ -512,7 +534,8 @@ summary(fme)
 #reorder levels for treatment contrast
 d$treatment <- relevel(d$treatment, ref = origTreatLevels[2])
 fme2 <- emfrail(survAssu ~ treatment + cluster(Moats), 
-                  distribution = emfrail_dist(dist = "stable"),
+                  distribution = emfrail_dist(dist = frailtyDist$dist[frailtyDist$name == bestDist],
+                                           pvfm = frailtyDist$m[frailtyDist$name == bestDist] ),
                   data = d)
 
 summary(fme2)
@@ -545,6 +568,8 @@ for(i in 1:length(predAssu)){
 # TODO fit the frailtyEM model of the other survival estimate (estimated dead) and plot curves
 # TODO Make the plot pretty
 # TODO could and confidence bands or ribbons with dPlot$survival_m_l_a and dPlot$survival_m_r_a, but that would probably the graph too messy
+
+#PLOT B
 ggplot(dPlot, aes(time, survival_m)) +
   geom_step(aes(color = treatment)) +
   geom_step(dPlot2, mapping  = aes(color = treatment), linetype = 2) +
