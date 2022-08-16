@@ -404,8 +404,8 @@ find_frailty_best_distribution
 # Note: the for loop can be kinda slow because it is fitting all four models
 #only need to run it once to find the best model
 
-# frailtyDist <- data.frame(name = c("gamma", "stablePos", "invGausian", "nonCenGamma"),
-#   dist = c("gamma", "stable", "pvf", "pvf"), m = c(0, 0, -0.5, 1))
+frailtyDist <- data.frame(name = c("gamma", "stablePos", "invGausian", "nonCenGamma"),
+  dist = c("gamma", "stable", "pvf", "pvf"), m = c(0, 0, -0.5, 1))
 # dLike <- NULL
 # for(i in 1:length(frailtyDist$name)){
 #   mLogLike <- emfrail(surv ~ treatment + cluster(Moats), 
@@ -468,13 +468,26 @@ for(i in 1:length(pred)){
 # TODO Make the plot pretty
 # TODO could and confidence bands or ribbons with dPlot$survival_m_l_a and dPlot$survival_m_r_a, but that would probably the graph too messy
 
-# PLOT A
-ggplot(dPlot, aes(time, survival_m)) +
-  geom_step(aes( color = treatment)) +
-  ylim(0,1) +
-  geom_blank()
+
 
 # TODO cleanup the frailtyEM text so it is manuscript ready
+```
+
+
+```{r poster-plot}
+# oceans in high so2 poster plot
+ggplot(dPlot, aes(time, survival_m)) +
+  geom_step(aes(color = treatment), size = 1) +
+  ylim(0,1) +
+  theme_bw(base_size = 20) +
+  xlab("Time (days)") +
+  ylab("Probability of Survival") +
+  scale_color_manual(name = "Treatment", 
+                       labels = c("All Change", "Current", "High Temp."),
+                       values = c("black", "green", "red")) +
+  geom_blank()
+
+ggsave(here("figs", "poster_plot.jpeg"))
 ```
 
 
