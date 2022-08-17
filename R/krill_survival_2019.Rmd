@@ -475,34 +475,6 @@ for(i in 1:length(pred)){
 ```
 
 
-```{r poster-plot}
-# oceans in high so2 poster plot
-color_pal <- c("limegreen", "mediumblue", "orange1")
-
-p <- ggplot(dPlot, aes(time, survival_m)) +
-  geom_step(aes(color = treatment), size = 1) +
-  ylim(0,1) +
-  theme_bw(base_size = 32) +
-  xlab("Time (days)") +
-  ylab("Probability of Survival") +
-  scale_color_manual(name = "Treatment", 
-                       labels = c("All Change", "Current", "High Temp."),
-                       values = color_pal) +
-  geom_blank()
-
-p
-
-ggsave(here("figs", "poster_plot_no_ci.jpeg"))
-
-p <- p +
-  geom_stepribbon(aes(ymin = survival_m_r_a, ymax = survival_m_l_a,
-                      fill = treatment), alpha = 0.2, show.legend = FALSE) +
-  scale_fill_manual(values = color_pal) 
-p
-ggsave(here("figs", "poster_plot_with_ci.jpeg"))
-```
-
-
 Survival in the three treatments was compared using a hazard model that included the MOATS as a clustered frailty term. The frailty model was fit using the frailtyEM R package [ref]. Preliminary analyses was conducted to compare four potential distribution of the frailty (gamma, positive stable, inverse Gausian and non-central gamma). The positive stable distribution had the greatest likelihood value and it was selected for the final analysis (Balan and Putter). Using a likelihood ratio test, inclusion of the frailty term was deemed significant when compared to the treatment only hazards model (p = 0.000282). Likewise, the presence of unexplained heterogeneity in the simple non-frailty model suggests appropriate inclusion of the frailty (MOATS) term (Commenges-Andersen test p = 0.00417). There were no significant differences among pair-wise comparisons of the treatments (all vs. current p = 0.26; all vs. highT p = 0.38; current vs. highT p = 0.87). The graph plots the marginal survival curves comparing treatments integrated over the MOATS frailty effect.
 
 
@@ -602,5 +574,35 @@ ggplot(dPlot, aes(time, survival_m)) +
   geom_blank()
 #make a new dplot, then another row in ggplot call geomstep data = dplot2 (set line type to dashed)
 # TODO cleanup the frailtyEM text so it is manuscript ready
+```
+
+
+```{r poster-plot}
+# oceans in high so2 poster plot
+color_pal <- c("limegreen", "mediumblue", "orange1")
+
+p <- ggplot(dPlot, aes(time, survival_m)) +
+  geom_step(aes(color = treatment), size = 1) +
+  ylim(0,1) +
+  theme_bw(base_size = 32) +
+  xlab("Time (days)") +
+  ylab("Probability of Survival") +
+  scale_color_manual(name = "Treatment", 
+                       labels = c("Future Ocean", "Current Ocean", "Heat Wave"),
+                       values = color_pal) +
+  theme(legend.position = c(0.5, 0.4),
+        legend.box.background = element_rect(color = "black", size = 1)) +
+  geom_blank()
+
+p
+
+ggsave(here("figs", "poster_plot_no_ci.jpeg"))
+
+p <- p +
+  geom_stepribbon(aes(ymin = survival_m_r_a, ymax = survival_m_l_a,
+                      fill = treatment), alpha = 0.2, show.legend = FALSE) +
+  scale_fill_manual(values = color_pal) 
+p
+ggsave(here("figs", "poster_plot_with_ci.jpeg"))
 ```
 
