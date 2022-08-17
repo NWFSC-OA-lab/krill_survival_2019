@@ -21,6 +21,7 @@ library(survminer)
 library(tidyverse)
 library(frailtyEM)
 library(todor)
+library(pammtools)
 ```
 
 
@@ -476,18 +477,29 @@ for(i in 1:length(pred)){
 
 ```{r poster-plot}
 # oceans in high so2 poster plot
-ggplot(dPlot, aes(time, survival_m)) +
+color_pal <- c("limegreen", "mediumblue", "orange1")
+
+p <- ggplot(dPlot, aes(time, survival_m)) +
   geom_step(aes(color = treatment), size = 1) +
   ylim(0,1) +
-  theme_bw(base_size = 20) +
+  theme_bw(base_size = 32) +
   xlab("Time (days)") +
   ylab("Probability of Survival") +
   scale_color_manual(name = "Treatment", 
                        labels = c("All Change", "Current", "High Temp."),
-                       values = c("black", "green", "red")) +
+                       values = color_pal) +
   geom_blank()
 
-ggsave(here("figs", "poster_plot.jpeg"))
+p
+
+ggsave(here("figs", "poster_plot_no_ci.jpeg"))
+
+p <- p +
+  geom_stepribbon(aes(ymin = survival_m_r_a, ymax = survival_m_l_a,
+                      fill = treatment), alpha = 0.2, show.legend = FALSE) +
+  scale_fill_manual(values = color_pal) 
+p
+ggsave(here("figs", "poster_plot_with_ci.jpeg"))
 ```
 
 
